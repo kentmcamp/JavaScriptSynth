@@ -4,8 +4,6 @@ document.querySelector('#app').innerHTML = `
   <h1>Click To Play Sound</h1>
 `
 
-
-
 var context;
 var notes = [];
 var soundArray = [];

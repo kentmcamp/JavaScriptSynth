@@ -1,43 +1,55 @@
 // New audio context - a container for running our audio
 // We do it in it's own function with an if statement so it's only created once.
 var context;
-var audioContextInit = false;
+var acInit = false;
+var notes = [];
 
 // Audio Generation
 var sampleRate = 48000;
 var sec = 2;
 var amp = .5;
 var freq = 440;
+var triPeak = 0.5
+
 var period = sampleRate / freq;
 
-
-function initAudioContext() {
-    if (!audioContextInit) {
+function initSound() {
+    if (!acInit) {
         context = new AudioContext();
-        audioContextInit = true;
+        iniKeys();
+        acInit = true;
+    }
+}
+
+function iniKeys() {
+    var numNotes = 88;
+    var refPitch = 440;
+    var refIdx = 48;
+    var twoToOneTwelfth = Math.pow(2, 1/12);
+
+    for (var i=0; i<numNotes; i++) {
+        notes[i] = refPitch * Math.pow(twoToOneTwelfth, i - refIdx);
     }
 }
 
 function playSound() {
     // 1. Initialize the audio context
-    initAudioContext();
+    initSound();
 
     // 5. Create an array to store the sound
     var soundArray = [];
 
-
     // Waves
-    var type = "square";
+    var type = "sine";
+
+    freq = notes[44];
+    period = sampleRate / freq;
+
     switch (type) {
         case "sine": makeSineWave(soundArray); break;
         case "square": makeSquareWave(soundArray); break;
         case "triangle": makeTriangleWave(soundArray); break;
         case "noise": makeNoise(soundArray); break;
-    }
-
-    for (var i = 0; i < sampleRate * sec; i++) {
-        // sine wave
-        soundArray[i] = Math.sin ( i / period * 2 * Math.PI) * amp;
     }
 
     // 6. Pass the array to the buffer
@@ -47,24 +59,44 @@ function playSound() {
 // Wave Functions
 // Sine Wave
 function makeSineWave(soundArray) {
-
+    for (var i = 0; i < sampleRate * sec; i++) {
+        soundArray[i] = Math.sin(i/period*2*Math.PI) * amp;
+    }
 };
 
 // Square Wave
 function makeSquareWave(soundArray) {
-
+    for (var i = 0; i < sampleRate * sec; i++) {
+        soundArray[i] = ((i % period) < (period / 2) ? 1 : -1) * amp;
+    }
 }
 
 // Triangle Wave
 function makeTriangleWave(soundArray) {
+    var tp2 = triPeak / 2;
+    var itp2 = 1 - tp2;
 
+    for (var i = 0; i < sampleRate * sec; i++) {
+        var perc = (i % period) / period;
+        var samp = 0;
+        if (perc < tp2) {
+            samp = perc / tp2;
+        } else if (perc < itp2) {
+            var perc2 = perc - tp2;
+            samp = perc2 / (itp2 - tp2) * -2 + 1;
+        } else {
+            samp = (perc - itp2) / tp2 * -1;
+        }
+        soundArray[i] = samp * amp;
+    }
 }
 
 // Noise
 function makeNoise(soundArray) {
-
+    for (var i = 0; i < sampleRate * sec; i++) {
+        soundArray[i] = (Math.random()*2-1) * amp;
+    }
 }
-
 
 // Outputs the audio that we want to play to the speakers
 function playBuffer(soundArray) {
